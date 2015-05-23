@@ -15,12 +15,13 @@ We analyze the response in guinea pig tooth growth to vitamin C supplementation.
 
 > The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
 
+The 'ascorbic acid' delivery method refers to vitamin C tablets.
+
 ## Requirements
 
 1. Load the ToothGrowth data and perform some basic exploratory data analyses 
 2. Provide a basic summary of the data.
-3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
-4. State your conclusions and the assumptions needed for your conclusions. 
+3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. 4. State your conclusions and the assumptions needed for your conclusions. 
 
 # Exploratory Data Analysis
 
@@ -82,9 +83,52 @@ The relationship here is less clear. While the bulk of the data related to orang
 
 # Hypothesis Testing
 
+Based on the results above, our intution leads us to believe that higher dosage is related to increased tooth growth, while the delivery method is unclear. We wish to test our intuition in the first case, and see what a statistical analysis can tell us about the second by answering the following questions:
+
+1. Does a higher dosage yield more tooth growth?
+2. With respect to increased tooth growth, is orange juice a more effective vitamin C delivery method vs. tablets?
+
+## Dosage vs. Tooth Growth
+
+* Null hypothesis: Higher dosage *does not* yield more tooth growth.
+* Alt hypothesis: Higher dosage *does* yield more tooth growth.
+
+Calculate the mean and standard deviation of tooth length aggregated by dosage, and the standard error of the mean:
+
 ```{r}
-fit <- lm(len ~ dose + supp, data=ToothGrowth)
-confint(fit)
+n <- 20  # There are 20 guinea pigs per dosage group
+mean_growth_by_dose <- tapply(ToothGrowth$len, ToothGrowth$dose, mean)
+sd_growth_by_dose   <- tapply(ToothGrowth$len, ToothGrowth$dose, sd)
+std_error_of_mean   <- sd_growth_by_dose / sqrt(n)
+
+df <- data.frame(dose = unique(ToothGrowth$dose),
+                 mean_tooth_length = as.numeric(mean_growth_by_dose),
+                 sd_tooth_length   = as.numeric(sd_growth_by_dose),
+                 std_error_of_mean = as.numeric(std_error_of_mean))
+
+Z <- 1.96
+for(i in 1 : nrow(df)) {
+  print(df[i, c("mean_tooth_length")] + c(-1, 1) * Z * df[i, c("std_error_of_mean")])
+}
 ```
 
-# Conclusion
+### Conclusion
+
+Based on the results above, we reject the null hypothesis and state with 95% confidence that higher dosage does yield increased tooth growth.
+
+## Delivery Method vs. Tooth Growth
+
+* Null hypothesis: Orange juice *is not* a more effective delivery method (does not yield more tooth growth vs. tablets).
+* Alt hypothesis: Orange juice *is* a more effective delivery method (yields more tooth growth vs. tablets).
+
+```{r}
+OJ <- ToothGrowth[ToothGrowth$supp == "OJ",]
+VC <- ToothGrowth[ToothGrowth$supp == "VC",]
+
+# Two-sided test first
+t.test(OJ$len, VC$len)
+```
+
+### Conclusion
+
+Based on the results of the t-test, we cannot reject the null hypothesis. There may be no statistically significant difference in the vitamin C dellivery method.
