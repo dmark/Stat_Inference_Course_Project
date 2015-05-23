@@ -1,5 +1,5 @@
 ---
-title: "changeme"
+title: "The Effect of Vitamin C on Tooth Growth in Guinea Pigs"
 author: "Mark E. Drummond"
 date: '2015-05-23'
 output: 
@@ -8,3 +8,83 @@ output:
     toc_depth: 2
     theme: readable
 ---
+
+# Overview
+
+We analyze the response in guinea pig tooth growth to vitamin C supplementation. From the data set description:
+
+> The response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+
+## Requirements
+
+1. Load the ToothGrowth data and perform some basic exploratory data analyses 
+2. Provide a basic summary of the data.
+3. Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
+4. State your conclusions and the assumptions needed for your conclusions. 
+
+# Exploratory Data Analysis
+
+First we clean up our environment and set the seed for our random number generator to ensure consistent results during testing.
+
+```{r}
+# Clean up the working environment.
+rm(list = ls())
+# We set the seed for consistent results. Comment this line to allow for a
+# random seed each time the code is run.
+set.seed(19647)
+```
+
+Next we load the data and review the basic structure and summary statistics.
+
+```{r}
+data(ToothGrowth)
+str(ToothGrowth)
+summary(ToothGrowth)
+head(ToothGrowth)
+```
+
+The dosage is actualy a factor so let's convert it to such:
+
+```{r}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+str(ToothGrowth)
+```
+
+# Basic Summary
+
+Each dosage / delivery method pair invovled 10 guinea pigs.
+
+```{r}
+table(ToothGrowth$dose, ToothGrowth$supp)
+```
+
+Comparing tooth growth against dosage:
+
+```{r}
+boxplot(ToothGrowth$len ~ ToothGrowth$dose,
+        main = "Tooth Growth vs. Dosage",
+        xlab = "Dosage",
+        ylab = "Tooth Length")
+```
+
+Based on the plot, it seems reasonable to assumes a relationship between dosage and tooth growth.
+
+Comparing tooth growth against vitamin C delivery method:
+
+```{r}
+boxplot(ToothGrowth$len ~ ToothGrowth$supp, 
+        main = "Tooth Growth vs. Delivery Method",
+        xlab = "Delivery Method",
+        ylab = "Tooth Length")
+```
+
+The relationship here is less clear. While the bulk of the data related to orange juice as a delivery method is associated with increased tooth growth, the dispersion of the data for vitamin C tablets as a delivery method makes the situation less certain.
+
+# Hypothesis Testing
+
+```{r}
+fit <- lm(len ~ dose + supp, data=ToothGrowth)
+confint(fit)
+```
+
+# Conclusion
