@@ -2,38 +2,49 @@
 title: "An Investigation of the Exponential Distribution"
 author: "Mark E. Drummond"
 date: '2015-05-23'
-output: 
+output:
+  pdf_document:
+    toc: yes
   html_document:
-    toc: true
-    toc_depth: 2
     theme: readable
+    toc: yes
+    toc_depth: 2
 ---
 
 # Overview
 
 We investigate the properties of the [Exponential distribution](http://en.wikipedia.org/wiki/Exponential_distribution) and compare it with the expected theoretical results expressed by the [Central Limit Theorem](http://en.wikipedia.org/wiki/Central_limit_theorem).
 
-The Central Limit Theorem tells us that:
-
-> "...given a sufficiently large sample size from a population with a finite level of variance, the mean of all samples from the same population will be approximately equal to the mean of the population. Furthermore, all of the samples will follow an approximate normal distribution..." -- http://www.investopedia.com/terms/c/central_limit_theorem.asp
-
-In simple terms: Take independent random samples of size *n* from a population. As the sample size *n* and/or the number of samples increases, the distribution of the sample means will approach a Normal distribution. See below for additional explanation.
-
 ## Requirements
 
-1. Show the distribution of sample means and compare it to the theoretical mean of the distribution.
-2. Show the distribution of sample variances and compare it to the theoretical variance of the distribution.
+1. Show the mean of the sample means and compare it to the theoretical mean of the distribution.
+2. Show the mean of sample variances and compare it to the theoretical variance of the distribution.
 3. Show that the distribution is approximately normal.
+
+# Theory
+
+The Central Limit Theorem tells us that the distribution of sample means tends towards the Normal distribution as the sample size and the number of samples (simulations) increases, regardless of the distribution of the original data, assuming the samples are independant and identically distributed ([iid](http://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)).
+
+In other words: Take independent random samples of size *n* from a population. As the sample size *n* and/or the number of samples increases, the distribution of the sample means will approach a Normal dis.
+
+We expect:
+
+1. The mean of the samples to be approximately equal to the theoretical mean of the Exponential distribution.
+2. The variance of the samples to be approximately equal to the theoretical variance of the Exponential distribution.
+3. The sample means to be approximately normally distributed.
 
 # Simulations
 
 The exponential distribution can be simulated in R using the rexp(*n*, *lambda*) function where *n* is the sample size and *lambda* ($\lambda$) is the rate parameter. Both the mean and the standard deviation of the exponential distribution are $\frac{1}{\lambda}$.
 
-We run 1,000 simulations of the exponential distribution, using a sample size *n* of 40 and a rate parameter *lambda* of 0.2. For each simulation we record the mean, variance, and standard deviation of the simulated data and store all the results in data frame for further analysis.
+We run 1,000 simulations of the exponential distribution, using a sample size *n* of 40 and a rate parameter $\lambda$ of 0.2. For each simulation we record the mean and the variance of the simulated data and store all the results in data frame for further analysis.
 
-```{r include=FALSE}
+```{r}
 # Clear the working environment
 rm(list = ls())
+# We set the seed for consistent results. Comment this line to allow for a
+# random seed each time the code is run.
+set.seed(19647)
 ```
 
 ```{r}
@@ -56,22 +67,11 @@ for (experiment in 1 : number_of_simulations) {
 sample_statistics <- data.frame(cbind(sample_means, sample_variances))
 names(sample_statistics) <- c("sample_means", "sample_variances")
 
+str(sample_statistics)
 summary(sample_statistics)
 ```
 
 # Results
-
-## Expectations
-
-The Central Limit Theorem tells us that the distribution of sample means tends towards the Normal distribution as the sample size and the number of samples (simulations) increases, regardless of the distribution of the original data, assuming the samples are independant and identically distributed ([iid](http://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)).
-
-In other words, as we increase the sample size (*n*) and/or the number of simulations, we expect the distribution of the sample means to tend toward the normal, despite our samples being drawn from the Exponential distribution. Given enough simulations we expect the distribution of these sample means to be approximating Normally distributed.
-
-In this specific case we expect
-
-1. The sample means to be approximately normally distributed with the mean of the samples approximately equal to the theoretical mean of the Exponential distribution.
-2. The standard deviation of the samples to be approximately equal to the theoretical standard deviation of the Exponential distribution.
-3. The variance of the samples to be approximately equal to the theoretical variance of the Exponential distribution.
 
 ## Sample Mean vs. Theoretical Mean
 
@@ -85,23 +85,29 @@ ggplot(data = sample_statistics, aes(x = sample_statistics$sample_means)) +
   geom_histogram(aes(y = ..density..), 
                  binwidth = 0.2, fill = "lightblue", colour = "grey") + 
   stat_function(fun = dnorm, args = list(mean = mu, sd = sigma^2/n)) +
-  geom_vline(aes(xintercept = mu, colour = "blue")) + 
-  geom_vline(aes(xintercept = x_bar, colour = "red")) + 
-  ggtitle("Distribution of Sample Means") + 
+  geom_vline(xintercept = mu, colour = "darkblue") + 
+  geom_vline(xintercept = x_bar, colour = "red") + 
+  ggtitle("Figure 1 - Distribution of Sample Means") + 
   xlab("Sample Mean") + ylab("Frequency")
 ```
 
-As we can see from the plot, the distribution of the sample means approximates a Normal distribution with the mean of the sample means (red veritical line) very close to the theoretical mean (blue vertical bar).
+As we can see from the plot, the mean of the sample means (red veritical line) very close to the theoretical mean (blue vertical bar), as expected.
 
 ## Sample Variance vs. Theoretical Variance
 ```{r}
+S <- mean(sample_statistics$sample_variances)
 ggplot(data = sample_statistics, aes(x = sample_statistics$sample_variances)) + 
   geom_histogram(aes(y = ..density..), 
                  binwidth = 1, fill = "lightblue", colour = "grey") + 
   stat_function(fun = dnorm, args = list(mean = sigma^2, sd = sqrt(2*sigma^4/(n-1)))) +
-  geom_vline(aes(xintercept = sigma^2, colour = "blue")) + 
-  ggtitle("Distribution of Sample Variance") + 
+  geom_vline(xintercept = sigma^2, colour = "darkblue") + 
+  geom_vline(xintercept = S, colour = "red") + 
+  ggtitle("Figure 2 - Distribution of Sample Variance") + 
   xlab("Sample Variance") + ylab("Frequency")
 ```
 
-As with the sample means, here we see the sample variances tending toward the Normal distribution.
+As with the sample means, here we see the mean of the sample variances (red vertical line) approximates the theoretical variance (blue vertical line).
+
+## Distribution
+
+As we can see from the Figure 1, the distribution of the sample means approximates a Normal distribution.
