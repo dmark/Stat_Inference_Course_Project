@@ -11,7 +11,13 @@ output:
 
 # Overview
 
-We investigate the properties of the [exponential distribution](http://en.wikipedia.org/wiki/Exponential_distribution) and compare it with the expected theoretical results expressed by the [Central Limit Theorem](http://en.wikipedia.org/wiki/Central_limit_theorem).
+We investigate the properties of the [Exponential distribution](http://en.wikipedia.org/wiki/Exponential_distribution) and compare it with the expected theoretical results expressed by the [Central Limit Theorem](http://en.wikipedia.org/wiki/Central_limit_theorem).
+
+The Central Limit Theorem tells us that:
+
+> "...given a sufficiently large sample size from a population with a finite level of variance, the mean of all samples from the same population will be approximately equal to the mean of the population. Furthermore, all of the samples will follow an approximate normal distribution..." -- http://www.investopedia.com/terms/c/central_limit_theorem.asp
+
+In simple terms: Take independent random samples of size *n* from a population. As the sample size *n* and/or the number of samples increases, the distribution of the sample means will approach a Normal distribution. See below for additional explanation.
 
 ## Requirements
 
@@ -23,9 +29,10 @@ We investigate the properties of the [exponential distribution](http://en.wikipe
 
 The exponential distribution can be simulated in R using the rexp(*n*, *lambda*) function where *n* is the sample size and *lambda* ($\lambda$) is the rate parameter. Both the mean and the standard deviation of the exponential distribution are $\frac{1}{\lambda}$.
 
-We run 1,000 simulations of the exponential distribution, using a sample size *n* of 40 and a rate parameter *lambda* of 0.2. For each simulation we record the mean and standard deviation of the simulated data and store all the results in data frame for further analysis.
+We run 1,000 simulations of the exponential distribution, using a sample size *n* of 40 and a rate parameter *lambda* of 0.2. For each simulation we record the mean, variance, and standard deviation of the simulated data and store all the results in data frame for further analysis.
 
 ```{r include=FALSE}
+# Clear the working environment
 rm(list = ls())
 ```
 
@@ -34,23 +41,20 @@ n <- 40        # Sample size
 lambda <- 0.2  # Rate parameter
 number_of_simulations <- 1000
 
-theoretical_mean    <- 1 / lambda             # Theoretical mean
-theoretical_std_dev <- 1 / lambda             # Theoretical standard deviation
-theoretical_var     <- theoretical_std_dev^2  # Theoretical variance
+mu    <- 1 / lambda   # Theoretical mean
+sigma <- 1 / lambda   # Theoretical standard deviation
 
-sample_means          <- NULL
-sample_variances      <- NULL
-sample_std_deviations <- NULL
+sample_means     <- NULL
+sample_variances <- NULL
 
 for (experiment in 1 : number_of_simulations) {
   sample <- rexp(n = n, rate = lambda)
   sample_means          <- c(sample_means, mean(sample))
   sample_variances      <- c(sample_variances, var(sample))
-  sample_std_deviations <- c(sample_std_deviations, sd(sample))
 }
 
-sample_statistics <- data.frame(cbind(sample_means, sample_variances, sample_std_deviations))
-names(sample_statistics) <- c("sample_means", "sample_variances", "sample_std_deviations")
+sample_statistics <- data.frame(cbind(sample_means, sample_variances))
+names(sample_statistics) <- c("sample_means", "sample_variances")
 
 summary(sample_statistics)
 ```
@@ -59,56 +63,45 @@ summary(sample_statistics)
 
 ## Expectations
 
-The Central Limit Theorem tells us that the distribution of sample statistics tends towards the Normal distribution as the sample size and the number of samples (simulations) increases, regardless of the distribution of the original data, assuming the samples are independant and identically distributed ([iid](http://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)).
+The Central Limit Theorem tells us that the distribution of sample means tends towards the Normal distribution as the sample size and the number of samples (simulations) increases, regardless of the distribution of the original data, assuming the samples are independant and identically distributed ([iid](http://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)).
 
-In other words, as we increase the sample size (*n*) and/or the number of simulations, we expect the distribution of the means and standard deviations of our samples to tend toward the normal, and the distribution of the sample variances to tend toward the population variance, despite our samples being drawn from the exponential distribution. Given enough simulations we expect the distribution of these sample statistics to be approximating Normally distributed.
+In other words, as we increase the sample size (*n*) and/or the number of simulations, we expect the distribution of the sample means to tend toward the normal, despite our samples being drawn from the Exponential distribution. Given enough simulations we expect the distribution of these sample means to be approximating Normally distributed.
 
 In this specific case we expect
 
-1. The sample means to be approximately normally distributed with the mean of the samples approximately equal to the theoretical mean of the exponential distribution.
-2. The sample standard deviations to be approximately normally distributed with standard deviation of the samples approximately equal to the theoretical standard deviation of the exponential distribution.
-3. The variance of the samples to be approximately equal to the theoretical variance of the exponential distribution.
+1. The sample means to be approximately normally distributed with the mean of the samples approximately equal to the theoretical mean of the Exponential distribution.
+2. The standard deviation of the samples to be approximately equal to the theoretical standard deviation of the Exponential distribution.
+3. The variance of the samples to be approximately equal to the theoretical variance of the Exponential distribution.
 
 ## Sample Mean vs. Theoretical Mean
 
 ```{r}
 library(ggplot2)
-
-ggplot() + 
-  geom_histogram(data = sample_statistics, 
-                 aes(x = sample_statistics$sample_means), 
-                 binwidth = 0.2, fill = "lightblue", colour = "grey") + 
-  geom_vline(data = sample_statistics, 
-             aes(xintercept = 1/lambda, colour = "red")) + 
-  ggtitle("Distribution of Sample Means") + 
-  xlab("Sampled Means") + ylab("Frequency")
 ```
 
+```{r}
+x_bar <- mean(sample_statistics$sample_means)
+ggplot(data = sample_statistics, aes(x = sample_statistics$sample_means)) + 
+  geom_histogram(aes(y = ..density..), 
+                 binwidth = 0.2, fill = "lightblue", colour = "grey") + 
+  stat_function(fun = dnorm, args = list(mean = mu, sd = sigma^2/n)) +
+  geom_vline(aes(xintercept = mu, colour = "blue")) + 
+  geom_vline(aes(xintercept = x_bar, colour = "red")) + 
+  ggtitle("Distribution of Sample Means") + 
+  xlab("Sample Mean") + ylab("Frequency")
+```
+
+As we can see from the plot, the distribution of the sample means approximates a Normal distribution with the mean of the sample means (red veritical line) very close to the theoretical mean (blue vertical bar).
 
 ## Sample Variance vs. Theoretical Variance
 ```{r}
-ggplot() + 
-  geom_histogram(data = sample_statistics, 
-                 aes(x = sample_statistics$sample_variances), 
+ggplot(data = sample_statistics, aes(x = sample_statistics$sample_variances)) + 
+  geom_histogram(aes(y = ..density..), 
                  binwidth = 1, fill = "lightblue", colour = "grey") + 
-  geom_vline(data = sample_statistics, 
-             aes(xintercept = (1/lambda)^2, colour = "red")) + 
-  ggtitle("Distribution of Sample Variances") + 
-  xlab("Sampled Variances") + ylab("Frequency")
+  stat_function(fun = dnorm, args = list(mean = sigma^2, sd = sqrt(2*sigma^4/(n-1)))) +
+  geom_vline(aes(xintercept = sigma^2, colour = "blue")) + 
+  ggtitle("Distribution of Sample Variance") + 
+  xlab("Sample Variance") + ylab("Frequency")
 ```
 
-## Sample Standard Deviation vs. Theoretical Standard Deviation
-```{r}
-ggplot() + 
-  geom_histogram(data = sample_statistics, 
-                 aes(x = sample_statistics$sample_std_deviations), 
-                 binwidth = 0.2, fill = "lightblue", colour = "grey") + 
-  geom_vline(data = sample_statistics, 
-             aes(xintercept = 1/lambda, colour = "red")) + 
-  ggtitle("Distribution of Sample Standard Deviations") + 
-  xlab("Sampled Standard Deviations") + ylab("Frequency")
-```
-
-## Distribution
-
-# Conclusion
+As with the sample means, here we see the sample variances tending toward the Normal distribution.
